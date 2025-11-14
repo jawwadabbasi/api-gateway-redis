@@ -1,7 +1,7 @@
 # Batman API Gateway (Python + Redis)
 
 ## Overview
-This repository implements a high‑performance API Gateway built in Python using Flask.  
+This repository implements a high-performance API Gateway built in Python using Flask.  
 It provides routing, caching via Redis, authentication handling, request tracking, and forwarding logic.
 
 The gateway sits between clients and backend microservices, managing session validation, caching, forwarding, and consistent API responses.
@@ -34,18 +34,39 @@ Defines all API routes, required rules, caching settings, and exception handlers
 # Project Structure
 
 ```
-/v1
-  api.py
-  cache.py
-  helper.py
-  library.py
-includes/
-  db.py
-services/
-  logger.py
-  users.py
-settings.py
-main.py
+.
+├── README.md
+├── dev
+│   ├── Dockerfile
+│   ├── kubeconfig.yaml
+│   └── settings.py
+├── prod
+│   ├── Dockerfile
+│   ├── kubeconfig.yaml
+│   └── settings.py
+└── src
+    ├── configure.py
+    ├── cron.py
+    ├── includes
+    │   ├── common.py
+    │   ├── db.py
+    │   └── schema.py
+    ├── main.py
+    ├── requirements.txt
+    ├── services
+    │   ├── crons.py
+    │   ├── logger.py
+    │   └── users.py
+    ├── settings.py
+    ├── v1
+    │   ├── api.py
+    │   ├── cache.py
+    │   ├── helper.py
+    │   └── library.py
+    └── v2
+        └── controller.py
+
+8 directories, 23 files
 ```
 
 ---
@@ -66,7 +87,7 @@ which sends the request into `Api.Handler`.
 
 ---
 
-# 2. **Api.Handler()** – The Heart of the Gateway
+# 2. **Api.Handler()** - The Heart of the Gateway
 
 This method:
 1. Parses headers, body, IP
@@ -93,7 +114,7 @@ Flask (/v1/*)
   ↓
 Api.Handler()
   ↓
-Parse Request → Load Session → Apply Rules → Check Cache
+Parse Request -> Load Session -> Apply Rules -> Check Cache
   ↓
 Forward to service (internal API)
   ↓
@@ -113,9 +134,9 @@ Return final response to client
 Session cookies:
 - Cached in Redis as `cookie:<uuid>`
 - Loaded via `Users.VerifySession()`
-- Auto‑merged into request body
+- Auto-merged into request body
 
-If a route requires authentication but session missing → returns **403 Unauthorized**
+If a route requires authentication but session missing -> returns **403 Unauthorized**
 
 ---
 
@@ -146,8 +167,8 @@ cache_delete: [
 # Forwarding Logic
 
 `Helper.Forwarder()` determines:
-- GET → `endpoint?params`
-- POST → JSON body
+- GET -> `endpoint?params`
+- POST -> JSON body
 
 Uses Python `requests`:
 
@@ -178,20 +199,9 @@ The following is stored:
 - IP address
 - timestamp
 
-Insert query:
-
-```
-INSERT INTO requests (...)
-```
-
-Tracking runs **async** using:
-```
-ThreadPoolExecutor
-```
-
 ---
 
-# v1/library.py – Route Definitions
+# v1/library.py - Route Definitions
 
 Each endpoint includes:
 
@@ -210,7 +220,7 @@ This is the rule engine that powers the gateway.
 
 ---
 
-# v1/helper.py – Utilities
+# v1/helper.py - Utilities
 
 ### Parsing
 - Headers
@@ -228,7 +238,7 @@ Logs failure via `Logger.CreateExceptionLog`.
 
 ---
 
-# v1/cache.py – Redis Functions
+# v1/cache.py - Redis Functions
 
 ### Connect
 Initializes global Redis client.
@@ -238,7 +248,7 @@ Handles JSON serialization and key namespacing.
 
 ---
 
-# v1/api.py – Core Response Wrapper
+# v1/api.py - Core Response Wrapper
 
 Every request ends with:
 
@@ -274,15 +284,6 @@ Gateway will run on:
 ```
 http://0.0.0.0:<settings.FLASK_PORT>
 ```
-
----
-
-# Security Notes
-
-- Redis should be internal‑only
-- All backend service URLs should stay private to gateway
-- No direct client‑to‑service communication
-- All tokens/sensitive data stored in environment variables
 
 ---
 

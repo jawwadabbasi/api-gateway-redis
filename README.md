@@ -263,7 +263,11 @@ This handles:
 
 ---
 
-# Running Locally
+# Running Redis - Locally and in Production
+
+### Development (Local Redis)
+
+In development, Redis can run locally using Docker:
 
 ## Install Requirements
 ```
@@ -283,6 +287,108 @@ python main.py
 Gateway will run on:
 ```
 http://0.0.0.0:<settings.FLASK_PORT>
+```
+
+This launches a local Redis instance for quick testing.
+
+---
+
+## Production: AWS ElastiCache Redis OSS
+
+### Why Use AWS ElastiCache Redis OSS?
+
+- Fully managed Redis (no patching or maintenance)
+- Automatic failover
+- Multi-AZ replication
+- High availability & low latency
+- Works exactly like local Redis — same protocol, same Python client
+
+The API Gateway code **does not need any rewrite**.  
+Only the connection settings change.
+
+---
+
+## Connecting the API Gateway to ElastiCache
+
+Update your `settings.py`:
+
+```python
+REDIS_HOST = "batman-cache.xxxxxx.ng.0001.use1.cache.amazonaws.com"
+REDIS_PORT = 6379
+REDIS_SSL = True
+REDIS_DB = 0
+REDIS_KEY_PREFIX = "gateway"
+```
+
+Your Redis client automatically connects:
+
+```python
+import redis
+
+settings.REDIS_CLIENT = redis.Redis(
+    host=settings.REDIS_HOST,
+    port=settings.REDIS_PORT,
+    ssl=settings.REDIS_SSL,
+    decode_responses=True
+)
+```
+
+---
+
+## Security Notes for ElastiCache
+
+AWS enforces:
+
+- VPC-only access
+- Optional authentication tokens
+- TLS encryption
+
+If your cluster uses an auth token:
+
+```python
+settings.REDIS_CLIENT = redis.Redis(
+    host=settings.REDIS_HOST,
+    port=settings.REDIS_PORT,
+    ssl=True,
+    password=settings.REDIS_AUTH_TOKEN,
+    decode_responses=True
+)
+```
+
+---
+
+## Recommended Deployment Pattern
+
+Environment | Redis Setup
+----------- | -----------
+Local Dev | Docker Redis
+Production | Multi-AZ ElastiCache Redis OSS cluster
+
+---
+
+## How the API Gateway Uses Redis
+
+Redis is used for:
+
+- User session caching
+- Cached GET responses
+- Cached user profiles
+- Cache invalidation after POST requests
+
+---
+
+## Testing Redis Connectivity
+
+Run:
+
+```bash
+redis-cli -h <endpoint> -p 6379 --tls ping
+```
+
+Expected output:
+
+```
+PONG
 ```
 
 ---
